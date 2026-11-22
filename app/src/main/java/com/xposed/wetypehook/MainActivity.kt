@@ -635,6 +635,7 @@ private fun WeTypeSettingsScreen(
     var currentModeIsDark by rememberSaveable { mutableStateOf(systemDarkMode) }
     val draft = if (currentModeIsDark) darkDraft else lightDraft
     var disableHotUpdate by rememberSaveable { mutableStateOf(profiles.disableHotUpdate) }
+    var unlimitedClipboard by rememberSaveable { mutableStateOf(profiles.unlimitedClipboard) }
     var clipboardMaxRecords by rememberSaveable { mutableStateOf(profiles.clipboardMaxRecords.toString()) }
     var useHostKeyboardFont by rememberSaveable { mutableStateOf(profiles.useHostKeyboardFont) }
     var swipeSymbols by rememberSaveable { mutableStateOf(profiles.swipeSymbols) }
@@ -687,8 +688,9 @@ private fun WeTypeSettingsScreen(
             Toast.makeText(context, R.string.settings_swipe_symbols_invalid, Toast.LENGTH_LONG).show()
             return false
         }
-        val clipboardLimit = clipboardMaxRecords.trim().toIntOrNull()
-        if (clipboardLimit == null || clipboardLimit !in WeTypeSettings.MIN_CLIPBOARD_MAX_RECORDS..WeTypeSettings.MAX_CLIPBOARD_MAX_RECORDS) {
+        val clipboardRange = WeTypeSettings.MIN_CLIPBOARD_MAX_RECORDS..WeTypeSettings.MAX_CLIPBOARD_MAX_RECORDS
+        val clipboardLimit = clipboardMaxRecords.trim().toIntOrNull()?.takeIf { it in clipboardRange }
+        if (!unlimitedClipboard && clipboardLimit == null) {
             Toast.makeText(context, R.string.settings_clipboard_limit_invalid, Toast.LENGTH_SHORT).show()
             return false
         }
@@ -711,7 +713,8 @@ private fun WeTypeSettingsScreen(
                 light = lightDraft.toSnapshot(),
                 dark = darkDraft.toSnapshot(),
                 disableHotUpdate = disableHotUpdate,
-                clipboardMaxRecords = clipboardLimit,
+                clipboardMaxRecords = clipboardLimit ?: profiles.clipboardMaxRecords,
+                unlimitedClipboard = unlimitedClipboard,
                 useHostKeyboardFont = useHostKeyboardFont,
                 swipeSymbols = swipeSymbols
             ),
@@ -1035,6 +1038,7 @@ private fun WeTypeSettingsScreen(
                 ) {
                     Column {
                         NumericTextSettingItem(
+                            enabled = !unlimitedClipboard,
                             title = stringResource(R.string.settings_clipboard_limit_title),
                             summary = stringResource(R.string.settings_clipboard_limit_desc),
                             label = stringResource(R.string.settings_clipboard_limit_title),
@@ -1044,6 +1048,13 @@ private fun WeTypeSettingsScreen(
                                     clipboardMaxRecords = input
                                 }
                             }
+                        )
+                        HorizontalDivider()
+                        MiuixSwitchWidget(
+                            title = stringResource(R.string.settings_clipboard_unlimited_title),
+                            description = stringResource(R.string.settings_clipboard_unlimited_desc),
+                            checked = unlimitedClipboard,
+                            onCheckedChange = { unlimitedClipboard = it }
                         )
                         HorizontalDivider()
                         Column(Modifier.fillMaxWidth().padding(16.dp)) {
@@ -1999,6 +2010,7 @@ private fun NumericTextSettingItem(
     summary: String,
     value: String,
     label: String = "DP",
+    enabled: Boolean = true,
     onValueChange: (String) -> Unit
 ) {
     Column(
@@ -2022,6 +2034,7 @@ private fun NumericTextSettingItem(
             onValueChange = onValueChange,
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
+            enabled = enabled,
             label = label
         )
     }

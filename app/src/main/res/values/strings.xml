@@ -53,7 +53,9 @@
     <string name="settings_clipboard_limit_desc">Keep up to 10–2000 entries in normal mode, default 500. Short retention and expiry are unchanged. Lowering the limit can remove older entries.</string>
     <string name="settings_host_keyboard_font_title">Use original WeType keyboard font</string>
     <string name="settings_host_keyboard_font_desc">Off uses SF Pro. Save and restart WeType to change the font.</string>
-    <string name="settings_swipe_symbols_title">English QWERTY swipe symbols</string>
+    <string name="settings_clipboard_unlimited_title">Unlimited clipboard entries</string>
+    <string name="settings_clipboard_unlimited_desc">Disables count-based cleanup in normal mode. Expiry and short retention still apply. Keeping more entries can use more storage.</string>
+    <string name="settings_swipe_symbols_title">QWERTY swipe symbols (Pinyin and English)</string>
     <string name="settings_swipe_symbols_desc">Enter one mapping per line, such as 1=★. Use a single digit or symbol on each side. Leave blank to restore defaults. Save and restart WeType.</string>
     <string name="settings_swipe_symbols_invalid">Use one original and one replacement per line, separated by =. Original symbols must be unique.</string>
     <string name="settings_logo_star">Use star logo</string>

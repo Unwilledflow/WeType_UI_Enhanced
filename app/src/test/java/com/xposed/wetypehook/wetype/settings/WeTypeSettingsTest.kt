@@ -131,8 +131,13 @@ class WeTypeSettingsTest {
         assertEquals(WeTypeSettings.MAX_CLIPBOARD_MAX_RECORDS, readProfiles(mapOf(
             "clipboard_max_records" to Int.MAX_VALUE
         )).clipboardMaxRecords)
-        assertEquals(1200, WeTypeSettings.resolveClipboardLimit(500, restored.clipboardMaxRecords))
-        assertEquals(10, WeTypeSettings.resolveClipboardLimit(10, restored.clipboardMaxRecords))
+        assertEquals(1200, WeTypeSettings.resolveClipboardLimit(500, restored))
+        assertFalse(restored.unlimitedClipboard)
+        val unlimited = readProfiles(preferenceValues(restored.copy(unlimitedClipboard = true)))
+        assertTrue(unlimited.unlimitedClipboard)
+        assertEquals(Int.MAX_VALUE, WeTypeSettings.resolveClipboardLimit(500, unlimited))
+        assertEquals(10, WeTypeSettings.resolveClipboardLimit(10, unlimited))
+        assertEquals(1200, WeTypeSettings.resolveClipboardLimit(500, unlimited.copy(unlimitedClipboard = false)))
     }
 
     @Test

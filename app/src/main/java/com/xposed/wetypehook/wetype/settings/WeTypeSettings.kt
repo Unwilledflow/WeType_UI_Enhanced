@@ -111,6 +111,7 @@ object WeTypeSettings {
         val dark: Snapshot,
         val disableHotUpdate: Boolean = DEFAULT_DISABLE_HOT_UPDATE,
         val clipboardMaxRecords: Int = DEFAULT_CLIPBOARD_MAX_RECORDS,
+        val unlimitedClipboard: Boolean = false,
         val useHostKeyboardFont: Boolean = false,
         val swipeSymbols: String = ""
     ) {
@@ -212,8 +213,12 @@ object WeTypeSettings {
     }
 
     // WeType 4.0.2 uses 500 normally and 10 with its short-retention option.
-    internal fun resolveClipboardLimit(hostLimit: Int, configuredLimit: Int): Int =
-        if (hostLimit == DEFAULT_CLIPBOARD_MAX_RECORDS) configuredLimit else hostLimit
+    internal fun resolveClipboardLimit(hostLimit: Int, profiles: Profiles): Int =
+        when {
+            hostLimit != DEFAULT_CLIPBOARD_MAX_RECORDS -> hostLimit
+            profiles.unlimitedClipboard -> Int.MAX_VALUE
+            else -> profiles.clipboardMaxRecords
+        }
 
     fun prepareForHotReload() = synchronized(settingsLock) {
         hostFileObserver?.stopWatching()
@@ -402,6 +407,7 @@ object WeTypeSettings {
         put(KEY_PROFILES_VERSION, 1)
         put(KEY_DISABLE_HOT_UPDATE, disableHotUpdate)
         put(KEY_CLIPBOARD_MAX_RECORDS, profiles.clipboardMaxRecords)
+        put("unlimited_clipboard", unlimitedClipboard)
         put("host_keyboard_font", useHostKeyboardFont)
         put("swipe_symbols", profiles.swipeSymbols)
         fun writeProfile(prefix: String, profile: Snapshot) {
@@ -457,6 +463,7 @@ object WeTypeSettings {
             dark = readProfile(true),
             disableHotUpdate = getBoolean(KEY_DISABLE_HOT_UPDATE, DEFAULT_DISABLE_HOT_UPDATE),
             clipboardMaxRecords = getInt(KEY_CLIPBOARD_MAX_RECORDS, DEFAULT_CLIPBOARD_MAX_RECORDS),
+            unlimitedClipboard = getBoolean("unlimited_clipboard", false),
             useHostKeyboardFont = getBoolean("host_keyboard_font", false),
             swipeSymbols = getString("swipe_symbols", "")
         ).normalized()

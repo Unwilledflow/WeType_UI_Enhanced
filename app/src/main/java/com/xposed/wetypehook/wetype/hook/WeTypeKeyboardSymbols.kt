@@ -28,6 +28,7 @@ import java.util.WeakHashMap
 internal object WeTypeKeyboardSymbols {
     private const val KEY_DATA = "com.tencent.wetype.plugin.hld.keyboard.selfdraw.bean.KeyData"
     private const val KEYBOARD = "com.tencent.wetype.plugin.hld.keyboard.selfdraw.S3EnglishQwertyKeyboard"
+    private const val PINYIN_KEYBOARD = "com.tencent.wetype.plugin.hld.keyboard.selfdraw.S2ChineseQwertyKeyboard"
     private const val EMOJI_KEYBOARD = "com.tencent.wetype.plugin.hld.keyboard.selfdraw.S11EmojiKeyboard"
     private val dotCommaTexts = setOf(",", ".", "，", "。")
     private val hookedContent = mutableSetOf<Method>()
@@ -81,7 +82,9 @@ internal object WeTypeKeyboardSymbols {
             setter.hookBefore { param ->
                 val original = param[0] as? String ?: return@hookBefore
                 val replacement = WeTypeSettings.readProfilesXposed().swipeSymbolMap[original] ?: return@hookBefore
-                if (parent.invoke(param.thisObject)?.javaClass?.name == KEYBOARD) param[0] = replacement
+                when (parent.invoke(param.thisObject)?.javaClass?.name) {
+                    KEYBOARD, PINYIN_KEYBOARD -> param[0] = replacement
+                }
             }
         }.onFailure { Log.e(it) }
     }

@@ -518,7 +518,7 @@ internal object WeTypeResourceHooks {
             limit.hookAfter { param ->
                 val hostLimit = param.result as? Int ?: return@hookAfter
                 param.result = WeTypeSettings.resolveClipboardLimit(
-                    hostLimit, WeTypeSettings.readProfilesXposed().clipboardMaxRecords
+                    hostLimit, WeTypeSettings.readProfilesXposed()
                 )
             }
             Log.i("Success: Hook WeType clipboard history limit")
