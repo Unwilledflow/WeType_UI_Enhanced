@@ -106,6 +106,10 @@ MIUI / HyperOS 相关附加功能仅针对小米系统，不适用于其他厂�
 
 Xposed 模块仓库：https://github.com/Xposed-Modules-Repo/com.xposed.wetypehook
 
+Fork 优化版 WeType 4.0.2 LSPatch 集成包：[下载 APK](https://github.com/Unwilledflow/WeType_UI_Enhanced/releases/download/wetype-4.0.2-lspatch-fork-0ca0d17/Wetype_4.0.2.59201-fork-0ca0d17-lspatched.apk) · [构建与签名校验](./outputs/FORK-BUILD-VERIFICATION.json)
+
+该集成包重新签名，不保留腾讯原签名，不能覆盖官方原版安装；安装和运行尚未在实机验证。
+
 ## 开源致谢
 
 感谢项目 [MIUI_IME_Unlock(MIT)](https://github.com/RC1844/MIUI_IME_Unlock) 提供的解锁 MIUI 全面屏优化限制功能
