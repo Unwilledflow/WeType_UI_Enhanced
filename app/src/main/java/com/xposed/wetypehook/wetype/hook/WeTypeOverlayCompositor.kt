@@ -200,6 +200,10 @@ internal object WeTypeOverlayCompositor {
             toolsRequestedGetter?.invoke(settingsManager) as? Boolean
         }.getOrNull()
         val drawingAlphas = resolveWeTypeDrawAlphas(layers, toolsRequested)
+        if (drawingAlphas.isEmpty()) {
+            if (frame.maskedViews.isNotEmpty()) clearMasks(frame)
+            return
+        }
         val masked = drawingAlphas.mapNotNull { (id, alpha) ->
             views[id]?.let { it to alpha }
         }.toMap()

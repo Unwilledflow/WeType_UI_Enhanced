@@ -8,6 +8,34 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class WeTypeOverlayPolicyTest {
+    @Test
+    fun regularInputDoesNotMaskKeysOrCandidates() {
+        val layers = listOf(
+            layer(1, WeTypeLayerRole.Keyboard),
+            layer(2, WeTypeLayerRole.Candidate),
+            layer(3, WeTypeLayerRole.CandidateContent, ancestors = listOf(2)),
+            layer(4, WeTypeLayerRole.OverlayKeyboard).copy(rendered = false)
+        )
+        assertEquals(emptyMap<Int, Int>(), resolveWeTypeDrawAlphas(layers, false))
+    }
+
+    @Test
+    fun simultaneousOverlaysMultiplyTransmission() {
+        val layers = listOf(
+            layer(1, WeTypeLayerRole.Keyboard),
+            layer(2, WeTypeLayerRole.OverlayKeyboard).copy(opacity = 0.5f),
+            layer(3, WeTypeLayerRole.OverlayKeyboard).copy(opacity = 0.5f)
+        )
+        assertEquals(mapOf(1 to 64, 2 to 128), resolveWeTypeDrawAlphas(layers, null))
+    }
+
+    @Test
+    fun settingsToolsCanStillBeMaskedWithoutAnOverlayKeyboard() {
+        val tools = layer(1, WeTypeLayerRole.SettingsTools, owner = 10)
+        assertEquals(mapOf(1 to 0), resolveWeTypeDrawAlphas(listOf(tools), false))
+        assertEquals(emptyMap<Int, Int>(), resolveWeTypeDrawAlphas(listOf(tools), true))
+    }
+
     // ImeCandidateView.M1 adds the right-hand settings toolbar at child index 0,
     // outside setting_container_rl. Both are shared with S10SettingsKeyboard.
     private fun settingsWithSiblingChrome() = listOf(

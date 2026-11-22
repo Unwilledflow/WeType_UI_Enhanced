@@ -3,6 +3,8 @@
 
 # WeType UI Enhanced
 
+> 本项目是 [NEORUAA/WeType_UI_Enhanced](https://github.com/NEORUAA/WeType_UI_Enhanced) 的非官方 fork，由社区维护。上游项目原作者及贡献者见上游仓库；本 fork 的维护与发布由本仓库负责。
+
 一个以 **微信输入法（WeType）界面美化与个性化** 为主要功能的 Xposed 模块，同时为作用域其它输入法解锁 MIUI 全面屏优化限制。
 
 

@@ -10,7 +10,6 @@ import android.graphics.fonts.Font
 import android.graphics.fonts.FontFamily
 import android.graphics.fonts.FontStyle
 import android.util.LruCache
-import java.util.IdentityHashMap
 import java.util.WeakHashMap
 
 /** SF Pro Text and SF Symbols rendering using the module's font asset. */
@@ -22,6 +21,7 @@ internal object SfSymbols {
     private const val LETTER_WIDTH = 90
     private const val STANDARD_WIDTH = 100
     private const val SYMBOL_FIT = 0.88f
+    private const val MAX_CACHED_TYPEFACES = 8
     private const val MAX_CACHED_TEXTS = 64
     private const val MAX_CACHED_SIZES = 4
 
@@ -46,7 +46,8 @@ internal object SfSymbols {
 
     private val fontCaches = WeakHashMap<AssetManager, FontCache>()
     private val hostFamilies = WeakHashMap<AssetManager, FontFamily?>()
-    private val glyphCaches = IdentityHashMap<Typeface, GlyphCache>()
+    // Cached Paints retain their typeface, so weak keys alone would not bound this cache.
+    private val glyphCaches = LruCache<Typeface, GlyphCache>(MAX_CACHED_TYPEFACES)
 
     /** SF Pro Text from module assets, followed by the optional host font and system fonts. */
     fun getTypeface(
@@ -190,7 +191,7 @@ internal object SfSymbols {
         ) return false
         val opticalSize = if (symbol) SYMBOL_OPTICAL_SIZE else TEXT_OPTICAL_SIZE
         val typeface = getTypeface(assets, weight, opticalSize, STANDARD_WIDTH, hostAssets) ?: return false
-        val cache = glyphCaches.getOrPut(typeface) { GlyphCache() }
+        val cache = glyphCaches.get(typeface) ?: GlyphCache().also { glyphCaches.put(typeface, it) }
         val runs = (if (symbol) cache.symbols else cache.text).let { entries ->
             entries.get(text) ?: mutableListOf<GlyphRun>().also { entries.put(text, it) }
         }

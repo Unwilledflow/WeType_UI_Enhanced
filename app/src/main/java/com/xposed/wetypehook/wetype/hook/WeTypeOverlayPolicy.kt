@@ -38,13 +38,16 @@ internal fun resolveWeTypeDrawAlphas(
     layers: List<WeTypeLayerSnapshot>,
     settingsToolsRequested: Boolean?
 ): Map<Int, Int> {
-    val alphas = mutableMapOf<Int, Int>()
     val overlays = layers.filter { it.role == WeTypeLayerRole.OverlayKeyboard && it.rendered }
-    val chrome = layers.filter { it.role == WeTypeLayerRole.SettingsChrome && it.rendered }
+    if (overlays.isEmpty() && layers.none { it.role == WeTypeLayerRole.SettingsTools && it.rendered }) return emptyMap()
+    val alphas = mutableMapOf<Int, Int>()
+    val chrome = if (overlays.isEmpty()) emptyList() else
+        layers.filter { it.role == WeTypeLayerRole.SettingsChrome && it.rendered }
     for (layer in layers) {
         if (!layer.rendered) continue
-        if (layer.role == WeTypeLayerRole.Keyboard || layer.role == WeTypeLayerRole.Candidate ||
-            layer.role == WeTypeLayerRole.CandidateContent || layer.role == WeTypeLayerRole.OverlayKeyboard) {
+        if (overlays.isNotEmpty() && (layer.role == WeTypeLayerRole.Keyboard || layer.role == WeTypeLayerRole.Candidate ||
+            layer.role == WeTypeLayerRole.CandidateContent || layer.role == WeTypeLayerRole.OverlayKeyboard)
+        ) {
             // Settings chrome is shared with the candidate bar, but lives in
             // multiple branches. Preserve each branch and its ancestors, never
             // the ordinary candidate siblings. Other overlays still cover it.
@@ -53,29 +56,31 @@ internal fun resolveWeTypeDrawAlphas(
                     layer.role == WeTypeLayerRole.CandidateContent) && chrome.any {
                         layer.id in it.ancestors || it.id in layer.ancestors
                     }
-            val coveringOverlays = overlays.filter { overlay ->
-                overlay.id > layer.id && layer.id !in overlay.ancestors &&
-                    overlay.id !in layer.ancestors &&
-                    occludes(overlay.bounds, layer.bounds) &&
+            var transmission = 1f
+            for (overlay in overlays) {
+                if (overlay.id > layer.id && layer.id !in overlay.ancestors &&
+                    overlay.id !in layer.ancestors && occludes(overlay.bounds, layer.bounds) &&
                     !(sharedChrome && overlay.settingsOwner != null)
-            }
-            if (coveringOverlays.isNotEmpty()) {
-                val transmission = coveringOverlays.fold(1f) { alpha, overlay ->
-                    alpha * (1f - overlay.opacity.coerceIn(0f, 1f))
+                ) {
+                    transmission *= 1f - overlay.opacity.coerceIn(0f, 1f)
                 }
-                val alpha = (255f * transmission).roundToInt()
-                if (alpha < 255) alphas[layer.id] = alpha
             }
+            val alpha = (255f * transmission).roundToInt()
+            if (alpha < 255) alphas[layer.id] = alpha
         }
         if (layer.role == WeTypeLayerRole.SettingsTools) {
-            val pages = layers.filter { page ->
-                page.role == WeTypeLayerRole.SettingsPage && page.rendered &&
+            var hasPage = false
+            var transmission = 1f
+            for (page in layers) {
+                if (page.role == WeTypeLayerRole.SettingsPage && page.rendered &&
                     page.settingsOwner == layer.settingsOwner
+                ) {
+                    hasPage = true
+                    transmission *= 1f - page.opacity.coerceIn(0f, 1f)
+                }
             }
-            val alpha = if (pages.isNotEmpty()) {
-                (255f * pages.fold(1f) { value, page ->
-                    value * (1f - page.opacity.coerceIn(0f, 1f))
-                }).roundToInt()
+            val alpha = if (hasPage) {
+                (255f * transmission).roundToInt()
             } else if (settingsToolsRequested == false) 0 else 255
             if (alpha < 255) alphas[layer.id] = alpha
         }
@@ -83,6 +88,7 @@ internal fun resolveWeTypeDrawAlphas(
     // Targets above describe absolute transmission. A shared chrome ancestor can
     // be partially covered while its candidate siblings must remain fully hidden.
     // Keep stronger descendant masks, relative to the already applied ancestor.
+    if (alphas.isEmpty()) return emptyMap()
     return layers.mapNotNull { layer ->
         val target = alphas[layer.id] ?: return@mapNotNull null
         val inherited = layer.ancestors.mapNotNull(alphas::get).minOrNull() ?: 255
