@@ -1,0 +1,29 @@
+{
+  "sourceCommit": "0ca0d17c64fe07234c4cb60496f0103fa0611542",
+  "moduleVersion": "1.29.0",
+  "modulePackage": "com.xposed.wetypehook",
+  "moduleApkSha256": "35fa0c1bfeb7d3b850b395b1543e964e4694f3936e05e11f79e9beae9fd1b14f",
+  "moduleSignerCertificateSha256": "1f121f8c856b3ecd1ae8ed35187ea9523e520409709c8de632255c5b2281ef89",
+  "moduleSigner": "WeType UI Enhanced Fork",
+  "hostRelease": "WeType 4.0.2 (versionCode 59201)",
+  "hostPackage": "com.tencent.wetype",
+  "hostApk": "Wetype_4.0.2.59201-fork-0ca0d17-lspatched.apk",
+  "hostApkBytes": 246811992,
+  "hostApkSha256": "45b9ee58a195c67602db712b2bfc4afb0505cf8cc1766b22435c9a8662fbc9ea",
+  "hostApkSignerCertificateSha256": "c081890cf2a1adf13e56d7b50a4f3d8edb35b7c46d6ccc732dd997b7e433be1d",
+  "hostSignatureScheme": "v2",
+  "patcher": "JingMatrix LSPatch v1.2 (API 102)",
+  "mode": "integrated",
+  "useManager": false,
+  "signatureBypassLevel": 0,
+  "embeddedModuleMatchesBuiltRelease": true,
+  "releaseUrl": "https://github.com/Unwilledflow/WeType_UI_Enhanced/releases/tag/wetype-4.0.2-lspatch-fork-0ca0d17",
+  "downloadUrl": "https://github.com/Unwilledflow/WeType_UI_Enhanced/releases/download/wetype-4.0.2-lspatch-fork-0ca0d17/Wetype_4.0.2.59201-fork-0ca0d17-lspatched.apk",
+  "deviceInstallTested": false,
+  "limitations": [
+    "The host APK is re-signed by LSPatch, not Tencent; it cannot update an official Tencent-signed installation in place.",
+    "No connected ADB device was available for installation or runtime validation.",
+    "Full local unit tests have one unrelated HostPreferencesFileTest failure on Windows (File.renameTo cannot replace the existing destination); overlay policy tests passed.",
+    "No device power or memory benchmark was run."
+  ]
+}
