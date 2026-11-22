@@ -352,6 +352,9 @@ class MainHook : XposedModule() {
         HookEnvironment.withHookScope("wetype.intent-entry") { hookWeTypeIntentEntry() }
         HookEnvironment.withHookScope("wetype.activity-result") { hookWeTypeActivityResultEntry() }
         HookEnvironment.withHookScope("wetype.about-entry") { hookWeTypeAboutLogoEntry() }
+        HookEnvironment.withHookScope("wetype.clipboard-limit") {
+            WeTypeResourceHooks.hookClipboardMaxRecords()
+        }
         HookEnvironment.withHookScope("wetype.keyboard-logo") { WeTypeResourceHooks.hookKeyboardLogo() }
         HookEnvironment.withHookScope("wetype.toolbar-icon") { WeTypeResourceHooks.hookToolbarIconBackground() }
     }

@@ -48,9 +48,20 @@
     <string name="settings_group_color">Color</string>
     <string name="settings_group_actions">Actions</string>
     <string name="settings_group_other">Shared settings</string>
+    <string name="settings_group_input_behavior">Input and updates</string>
+    <string name="settings_clipboard_limit_title">Clipboard history limit</string>
+    <string name="settings_clipboard_limit_desc">Keep up to 10–2000 entries in normal mode, default 500. Short retention and expiry are unchanged. Lowering the limit can remove older entries.</string>
+    <string name="settings_host_keyboard_font_title">Use original WeType keyboard font</string>
+    <string name="settings_host_keyboard_font_desc">Off uses SF Pro. Save and restart WeType to change the font.</string>
+    <string name="settings_swipe_symbols_title">English QWERTY swipe symbols</string>
+    <string name="settings_swipe_symbols_desc">Enter one mapping per line, such as 1=★. Use a single digit or symbol on each side. Leave blank to restore defaults. Save and restart WeType.</string>
+    <string name="settings_swipe_symbols_invalid">Use one original and one replacement per line, separated by =. Original symbols must be unique.</string>
+    <string name="settings_logo_star">Use star logo</string>
+    <string name="settings_logo_diamond">Use diamond logo</string>
+    <string name="settings_clipboard_limit_invalid">Enter a clipboard limit from 10 to 2000</string>
 
-    <string name="settings_disable_hot_update_title">Disable hot update</string>
-    <string name="settings_disable_hot_update_desc">Block WeType hotfix updates</string>
+    <string name="settings_disable_hot_update_title">Block WeType hot updates</string>
+    <string name="settings_disable_hot_update_desc">Blocks RFix and Tinker patch downloads and application. Turn off to receive official fixes; restart WeType after changing.</string>
     <string name="settings_hide_launcher_icon_title">Hide launcher icon</string>
     <string name="settings_hide_launcher_icon_desc">Applies immediately. Open settings from LSPosed or enter *#*#%1$s#*#* in the dialer. On MIUI/HyperOS, allow this module to open windows in the background to use the dialer shortcut.</string>
     <string name="settings_launcher_icon_failed">Could not access the launcher icon setting. Please reopen this page and try again.</string>

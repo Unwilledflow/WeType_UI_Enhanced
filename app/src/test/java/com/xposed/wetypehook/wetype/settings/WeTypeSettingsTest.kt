@@ -122,6 +122,30 @@ class WeTypeSettingsTest {
     }
 
     @Test
+    fun clipboardLimitRoundTripsClampsAndPreservesShortRetention() {
+        val profiles = WeTypeSettings.defaultProfiles().copy(clipboardMaxRecords = 1200)
+        val restored = readProfiles(preferenceValues(profiles))
+
+        assertEquals(1200, restored.clipboardMaxRecords)
+        assertEquals(WeTypeSettings.DEFAULT_CLIPBOARD_MAX_RECORDS, readProfiles(emptyMap()).clipboardMaxRecords)
+        assertEquals(WeTypeSettings.MAX_CLIPBOARD_MAX_RECORDS, readProfiles(mapOf(
+            "clipboard_max_records" to Int.MAX_VALUE
+        )).clipboardMaxRecords)
+        assertEquals(1200, WeTypeSettings.resolveClipboardLimit(500, restored.clipboardMaxRecords))
+        assertEquals(10, WeTypeSettings.resolveClipboardLimit(10, restored.clipboardMaxRecords))
+    }
+
+    @Test
+    fun keyboardOptionsRoundTripAndRejectInvalidMappings() {
+        val profiles = WeTypeSettings.defaultProfiles().copy(useHostKeyboardFont = true, swipeSymbols = "1=★\n==🔑")
+        val restored = readProfiles(preferenceValues(profiles))
+        assertTrue(restored.useHostKeyboardFont)
+        assertEquals(mapOf("1" to "★", "=" to "🔑"), restored.swipeSymbolMap)
+        assertEquals(null, WeTypeSettings.parseSwipeSymbols("1=★\n1=◆"))
+        assertEquals(null, WeTypeSettings.parseSwipeSymbols("1=abc"))
+    }
+
+    @Test
     fun savingOneProfilePreservesTheOtherProfileAndGlobalPreference() {
         val original = WeTypeSettings.defaultProfiles().copy(disableHotUpdate = false)
         val edited = original.copy(light = original.light.copy(blurRadius = 15, customIconPath = "M1 2L3 4"))

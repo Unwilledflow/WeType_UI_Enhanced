@@ -635,6 +635,9 @@ private fun WeTypeSettingsScreen(
     var currentModeIsDark by rememberSaveable { mutableStateOf(systemDarkMode) }
     val draft = if (currentModeIsDark) darkDraft else lightDraft
     var disableHotUpdate by rememberSaveable { mutableStateOf(profiles.disableHotUpdate) }
+    var clipboardMaxRecords by rememberSaveable { mutableStateOf(profiles.clipboardMaxRecords.toString()) }
+    var useHostKeyboardFont by rememberSaveable { mutableStateOf(profiles.useHostKeyboardFont) }
+    var swipeSymbols by rememberSaveable { mutableStateOf(profiles.swipeSymbols) }
     val glassSupported = remember { WeTypeHyperMaterial.areGlassOverridesAvailable() }
     val parsedGlassOverrides = draft.parsedGlassOverrides()
     LaunchedEffect(draft, parsedGlassOverrides) {
@@ -680,6 +683,15 @@ private fun WeTypeSettingsScreen(
     }
 
     fun saveSettings(): Boolean {
+        if (WeTypeSettings.parseSwipeSymbols(swipeSymbols) == null) {
+            Toast.makeText(context, R.string.settings_swipe_symbols_invalid, Toast.LENGTH_LONG).show()
+            return false
+        }
+        val clipboardLimit = clipboardMaxRecords.trim().toIntOrNull()
+        if (clipboardLimit == null || clipboardLimit !in WeTypeSettings.MIN_CLIPBOARD_MAX_RECORDS..WeTypeSettings.MAX_CLIPBOARD_MAX_RECORDS) {
+            Toast.makeText(context, R.string.settings_clipboard_limit_invalid, Toast.LENGTH_SHORT).show()
+            return false
+        }
         for ((isDark, profileDraft) in listOf(false to lightDraft, true to darkDraft)) {
             val error = profileDraft.validationError()
             if (error != null) {
@@ -698,7 +710,10 @@ private fun WeTypeSettingsScreen(
             profiles = WeTypeSettings.Profiles(
                 light = lightDraft.toSnapshot(),
                 dark = darkDraft.toSnapshot(),
-                disableHotUpdate = disableHotUpdate
+                disableHotUpdate = disableHotUpdate,
+                clipboardMaxRecords = clipboardLimit,
+                useHostKeyboardFont = useHostKeyboardFont,
+                swipeSymbols = swipeSymbols
             ),
             onPersisted = { saved ->
                 Toast.makeText(
@@ -1010,6 +1025,55 @@ private fun WeTypeSettingsScreen(
                 }
             }
 
+            item {
+                SmallTitle(
+                    text = stringResource(R.string.settings_group_input_behavior)
+                )
+                Card(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    insideMargin = PaddingValues(0.dp)
+                ) {
+                    Column {
+                        NumericTextSettingItem(
+                            title = stringResource(R.string.settings_clipboard_limit_title),
+                            summary = stringResource(R.string.settings_clipboard_limit_desc),
+                            label = stringResource(R.string.settings_clipboard_limit_title),
+                            value = clipboardMaxRecords,
+                            onValueChange = { input ->
+                                if (sanitizeIntegerInput(input, maxLength = 4) != null) {
+                                    clipboardMaxRecords = input
+                                }
+                            }
+                        )
+                        HorizontalDivider()
+                        Column(Modifier.fillMaxWidth().padding(16.dp)) {
+                            Text(stringResource(R.string.settings_swipe_symbols_desc))
+                            Spacer(Modifier.height(8.dp))
+                            TextField(
+                                value = swipeSymbols,
+                                onValueChange = { if (it.length <= 512) swipeSymbols = it },
+                                label = stringResource(R.string.settings_swipe_symbols_title),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                        HorizontalDivider()
+                        MiuixSwitchWidget(
+                            title = stringResource(R.string.settings_host_keyboard_font_title),
+                            description = stringResource(R.string.settings_host_keyboard_font_desc),
+                            checked = useHostKeyboardFont,
+                            onCheckedChange = { useHostKeyboardFont = it }
+                        )
+                        HorizontalDivider()
+                        MiuixSwitchWidget(
+                            title = stringResource(R.string.settings_disable_hot_update_title),
+                            description = stringResource(R.string.settings_disable_hot_update_desc),
+                            checked = disableHotUpdate,
+                            onCheckedChange = { disableHotUpdate = it }
+                        )
+                    }
+                }
+            }
+
             // 其他分组
             item {
                 SmallTitle(
@@ -1020,13 +1084,6 @@ private fun WeTypeSettingsScreen(
                     insideMargin = PaddingValues(0.dp)
                 ) {
                     Column {
-                        MiuixSwitchWidget(
-                            title = stringResource(R.string.settings_disable_hot_update_title),
-                            description = stringResource(R.string.settings_disable_hot_update_desc),
-                            checked = disableHotUpdate,
-                            onCheckedChange = { disableHotUpdate = it }
-                        )
-                        HorizontalDivider()
                         MiuixSwitchWidget(
                             title = stringResource(R.string.settings_hide_launcher_icon_title),
                             description = stringResource(
@@ -1740,6 +1797,14 @@ private fun IconShapePreferenceItem(
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(4.dp))
+        BasicComponent(
+            title = stringResource(R.string.settings_logo_star),
+            onClick = { onValueChange("M50 2 L61 35 L96 35 L68 56 L79 90 L50 69 L21 90 L32 56 L4 35 L39 35 Z") }
+        )
+        BasicComponent(
+            title = stringResource(R.string.settings_logo_diamond),
+            onClick = { onValueChange("M50 3 L97 50 L50 97 L3 50 Z") }
+        )
         if (launchSvgPicker != null) {
             BasicComponent(
                 title = stringResource(R.string.settings_icon_shape_import),
@@ -1933,6 +1998,7 @@ private fun NumericTextSettingItem(
     title: String,
     summary: String,
     value: String,
+    label: String = "DP",
     onValueChange: (String) -> Unit
 ) {
     Column(
@@ -1956,7 +2022,7 @@ private fun NumericTextSettingItem(
             onValueChange = onValueChange,
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
-            label = "DP"
+            label = label
         )
     }
 }

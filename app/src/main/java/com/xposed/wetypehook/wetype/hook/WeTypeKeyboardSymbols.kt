@@ -12,6 +12,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import com.xposed.wetypehook.wetype.graphics.SfSymbols
+import com.xposed.wetypehook.wetype.settings.WeTypeSettings
 import com.xposed.wetypehook.xposed.HookEnvironment
 import com.xposed.wetypehook.xposed.Log
 import com.xposed.wetypehook.xposed.hookAfter
@@ -39,6 +40,7 @@ internal object WeTypeKeyboardSymbols {
                 ?: error("Self-draw keyboard accessor unavailable")
             val buttonType = keyboard.getMethod("getActionButton").returnType
             hookPopupFontMetrics(buttonType, keyboard)
+            hookSwipeSymbols(buttonType, keyboard)
             val access = ButtonAccess(buttonType, keyboard)
             val drawerType = keyboard.getMethod("getButtonDrawer").returnType
             val addDrawer = drawerType.declaredMethods.single { method ->
@@ -70,6 +72,20 @@ internal object WeTypeKeyboardSymbols {
         }
     }
 
+    private fun hookSwipeSymbols(buttonType: Class<*>, keyboard: Class<*>) {
+        runCatching {
+            val parent = buttonType.methods.single { it.parameterCount == 0 && it.returnType == keyboard }
+            val setter = buttonType.getMethod("H0", String::class.java)
+            check(setter.returnType == Void.TYPE)
+            // The same backing field supplies the key hint, popup and swipe commit.
+            setter.hookBefore { param ->
+                val original = param[0] as? String ?: return@hookBefore
+                val replacement = WeTypeSettings.readProfilesXposed().swipeSymbolMap[original] ?: return@hookBefore
+                if (parent.invoke(param.thisObject)?.javaClass?.name == KEYBOARD) param[0] = replacement
+            }
+        }.onFailure { Log.e(it) }
+    }
+
     private fun hookPopupFontMetrics(buttonType: Class<*>, keyboard: Class<*>) {
         runCatching {
             val showPopup = buttonType.declaredMethods.single { method ->
@@ -83,7 +99,7 @@ internal object WeTypeKeyboardSymbols {
             // This button entry point creates the single-character bubble, including its swipe label.
             showPopup.hookAfter { param ->
                 val popup = popupView.invoke(param.thisObject) as? ViewGroup ?: return@hookAfter
-                removePopupFontPadding(popup)
+                if (!WeTypeSettings.readProfilesXposed().useHostKeyboardFont) removePopupFontPadding(popup)
             }
             Log.i("Success: Hook WeType SF key popup font metrics")
         }.onFailure {
@@ -170,6 +186,7 @@ internal object WeTypeKeyboardSymbols {
                     val assets = runCatching(getModuleAssets).getOrNull()
                         ?: return@registerHook chain.proceed()
                     if (selection == WeTypeKeyAppearance.FontOnly) {
+                        if (WeTypeSettings.readProfilesXposed().useHostKeyboardFont) return@registerHook chain.proceed()
                         if (runCatching { access.drawDotComma(canvas, assets, button, hostResources.assets) }.getOrDefault(false)) {
                             return@registerHook null
                         }

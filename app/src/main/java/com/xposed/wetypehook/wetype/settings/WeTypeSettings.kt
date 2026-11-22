@@ -41,6 +41,10 @@ object WeTypeSettings {
     private const val KEY_TOOLBAR_ICON_BG_OPACITY = "toolbar_icon_bg_opacity"
     private const val KEY_CUSTOM_ICON_PATH = "custom_icon_path"
     private const val KEY_ICON_SCALE = "icon_scale"
+    private const val KEY_CLIPBOARD_MAX_RECORDS = "clipboard_max_records"
+    const val DEFAULT_CLIPBOARD_MAX_RECORDS = 500
+    const val MIN_CLIPBOARD_MAX_RECORDS = 10
+    const val MAX_CLIPBOARD_MAX_RECORDS = 2000
     const val DEFAULT_LIGHT_COLOR = 0xBDD4D4D4.toInt()
     const val DEFAULT_DARK_COLOR = 0x40000000
     const val DEFAULT_HYPER_MATERIAL_ENABLED = false
@@ -105,8 +109,12 @@ object WeTypeSettings {
     data class Profiles(
         val light: Snapshot,
         val dark: Snapshot,
-        val disableHotUpdate: Boolean = DEFAULT_DISABLE_HOT_UPDATE
+        val disableHotUpdate: Boolean = DEFAULT_DISABLE_HOT_UPDATE,
+        val clipboardMaxRecords: Int = DEFAULT_CLIPBOARD_MAX_RECORDS,
+        val useHostKeyboardFont: Boolean = false,
+        val swipeSymbols: String = ""
     ) {
+        internal val swipeSymbolMap by lazy { parseSwipeSymbols(swipeSymbols).orEmpty() }
         // Stable map identities keep the resource-color cache valid across draw calls.
         private val resolvedLight by lazy { resolveProfile(light, dark, isDark = false) }
         private val resolvedDark by lazy { resolveProfile(dark, light, isDark = true) }
@@ -176,6 +184,36 @@ object WeTypeSettings {
     fun getAppearanceColors(context: Context): Map<String, Int> = readSnapshot(context).appearanceColors
 
     fun isDisableHotUpdate(context: Context): Boolean = readProfiles(context).disableHotUpdate
+
+    internal fun parseSwipeSymbols(input: String): Map<String, String>? {
+        if (input.length > 512) return null
+        val symbols = mutableMapOf<String, String>()
+        for (rawLine in input.lineSequence()) {
+            val line = rawLine.trim()
+            if (line.isEmpty()) continue
+            val separator = line.indexOf('=', startIndex = 1)
+            if (separator < 1) return null
+            val original = line.substring(0, separator).trim()
+            val replacement = line.substring(separator + 1).trim()
+            if (!isSwipeSymbol(original) || !isSwipeSymbol(replacement)) return null
+            if (symbols.put(original, replacement) != null) return null
+        }
+        return symbols
+    }
+
+    private fun isSwipeSymbol(value: String): Boolean {
+        if (value.isEmpty() || value.codePointCount(0, value.length) != 1) return false
+        val type = Character.getType(value.codePointAt(0))
+        return type in Character.DASH_PUNCTUATION.toInt()..Character.OTHER_PUNCTUATION.toInt() ||
+            type == Character.INITIAL_QUOTE_PUNCTUATION.toInt() ||
+            type == Character.FINAL_QUOTE_PUNCTUATION.toInt() ||
+            type in Character.MATH_SYMBOL.toInt()..Character.OTHER_SYMBOL.toInt() ||
+            type == Character.DECIMAL_DIGIT_NUMBER.toInt()
+    }
+
+    // WeType 4.0.2 uses 500 normally and 10 with its short-retention option.
+    internal fun resolveClipboardLimit(hostLimit: Int, configuredLimit: Int): Int =
+        if (hostLimit == DEFAULT_CLIPBOARD_MAX_RECORDS) configuredLimit else hostLimit
 
     fun prepareForHotReload() = synchronized(settingsLock) {
         hostFileObserver?.stopWatching()
@@ -363,6 +401,9 @@ object WeTypeSettings {
         val profiles = this@toPreferenceValues.normalized()
         put(KEY_PROFILES_VERSION, 1)
         put(KEY_DISABLE_HOT_UPDATE, disableHotUpdate)
+        put(KEY_CLIPBOARD_MAX_RECORDS, profiles.clipboardMaxRecords)
+        put("host_keyboard_font", useHostKeyboardFont)
+        put("swipe_symbols", profiles.swipeSymbols)
         fun writeProfile(prefix: String, profile: Snapshot) {
             val snapshot = profile
             fun putValue(key: String, value: Any) { put(prefix + key, value) }
@@ -414,7 +455,10 @@ object WeTypeSettings {
         val profiles = Profiles(
             light = readProfile(false),
             dark = readProfile(true),
-            disableHotUpdate = getBoolean(KEY_DISABLE_HOT_UPDATE, DEFAULT_DISABLE_HOT_UPDATE)
+            disableHotUpdate = getBoolean(KEY_DISABLE_HOT_UPDATE, DEFAULT_DISABLE_HOT_UPDATE),
+            clipboardMaxRecords = getInt(KEY_CLIPBOARD_MAX_RECORDS, DEFAULT_CLIPBOARD_MAX_RECORDS),
+            useHostKeyboardFont = getBoolean("host_keyboard_font", false),
+            swipeSymbols = getString("swipe_symbols", "")
         ).normalized()
         fun migrateCandidateColor(isDark: Boolean): Snapshot {
             val profile = if (isDark) profiles.dark else profiles.light
@@ -478,7 +522,12 @@ object WeTypeSettings {
         }
         return copy(
             light = normalizedLight.copy(followingColors = lightFollowing),
-            dark = normalizedDark
+            dark = normalizedDark,
+            swipeSymbols = swipeSymbols.takeIf { parseSwipeSymbols(it) != null }.orEmpty(),
+            clipboardMaxRecords = clipboardMaxRecords.coerceIn(
+                MIN_CLIPBOARD_MAX_RECORDS,
+                MAX_CLIPBOARD_MAX_RECORDS
+            )
         )
     }
 

@@ -126,7 +126,7 @@ internal object WeTypeResourceHooks {
                 AssetManager::class.java,
                 String::class.java
             ).hookBefore { param ->
-                if (param[1] != fontAsset) return@hookBefore
+                if (param[1] != fontAsset || WeTypeSettings.readProfilesXposed().useHostKeyboardFont) return@hookBefore
                 val hostAssets = param[0] as? AssetManager ?: return@hookBefore
                 runCatching {
                     SfSymbols.getTypeface(getModuleAssetManager(), hostAssets = hostAssets)
@@ -509,12 +509,25 @@ internal object WeTypeResourceHooks {
 
     private enum class KeyAttrRole { Fill, Shadow, Border }
 
-    /**
-     * Overrides the per-key background corner radius. The host reads [KeyData.bgCorner] (a design-unit
-     * value, default 16) for every key and scales it together with the key size, so returning the
-     * user's configured value here applies a uniform, size-proportional corner to all keys. Hooked on
-     * the readable, serialization-stable bean class/getter rather than any obfuscated identifier.
-     */
+    fun hookClipboardMaxRecords() {
+        runCatching {
+            val limitClass = loadClassOrNull("com.tencent.wetype.plugin.hld.model.l0\$d")
+                ?: error("Clipboard limit class unavailable")
+            val limit = limitClass.getMethod("a")
+            check(limit.returnType == Int::class.javaPrimitiveType)
+            limit.hookAfter { param ->
+                val hostLimit = param.result as? Int ?: return@hookAfter
+                param.result = WeTypeSettings.resolveClipboardLimit(
+                    hostLimit, WeTypeSettings.readProfilesXposed().clipboardMaxRecords
+                )
+            }
+            Log.i("Success: Hook WeType clipboard history limit")
+        }.onFailure {
+            Log.i("Failed: Hook WeType clipboard history limit")
+            Log.i(it)
+        }
+    }
+
     fun hookKeyboardKeyCorner() {
         runCatching {
             val keyDataClass = loadClassOrNull(KEY_DATA_CLASS)

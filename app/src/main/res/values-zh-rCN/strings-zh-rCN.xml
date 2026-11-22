@@ -48,9 +48,20 @@
     <string name="settings_group_color">颜色</string>
     <string name="settings_group_actions">操作</string>
     <string name="settings_group_other">通用设置</string>
+    <string name="settings_group_input_behavior">输入与更新</string>
+    <string name="settings_clipboard_limit_title">剪贴板保留条数</string>
+    <string name="settings_clipboard_limit_desc">普通模式可设为 10–2000 条，默认 500 条。短时保留和到期规则照常生效。调低上限可能清理旧记录。</string>
+    <string name="settings_host_keyboard_font_title">使用微信输入法原字体</string>
+    <string name="settings_host_keyboard_font_desc">关闭时使用 SF Pro。保存后重启微信输入法以切换字体。</string>
+    <string name="settings_swipe_symbols_title">英文全键盘上滑符号</string>
+    <string name="settings_swipe_symbols_desc">每行填写一组原符号=新符号，例如 1=★。支持单个数字或符号，留空恢复默认。保存后重新启动输入法。</string>
+    <string name="settings_swipe_symbols_invalid">每行填写一个原符号和一个新符号，用等号分隔，原符号不能重复</string>
+    <string name="settings_logo_star">使用星形 Logo</string>
+    <string name="settings_logo_diamond">使用菱形 Logo</string>
+    <string name="settings_clipboard_limit_invalid">请输入 10 到 2000 之间的剪贴板条数</string>
 
-    <string name="settings_disable_hot_update_title">禁用热更新</string>
-    <string name="settings_disable_hot_update_desc">阻止微信输入法热修复</string>
+    <string name="settings_disable_hot_update_title">阻止微信输入法热更新</string>
+    <string name="settings_disable_hot_update_desc">阻止 RFix 和 Tinker 补丁下载与应用。关闭可接收官方修复；修改后重启输入法生效。</string>
     <string name="settings_hide_launcher_icon_title">隐藏桌面图标</string>
     <string name="settings_hide_launcher_icon_desc">立即生效。隐藏后可从 LSPosed 打开设置，或在拨号盘输入 *#*#%1$s#*#*。MIUI/HyperOS 使用拨号入口需允许本模块在后台弹出界面。</string>
     <string name="settings_launcher_icon_failed">无法读取或更改桌面图标状态，请重新打开此页面后重试。</string>
