@@ -51,13 +51,19 @@
     <string name="settings_group_input_behavior">输入与更新</string>
     <string name="settings_clipboard_limit_title">剪贴板保留条数</string>
     <string name="settings_clipboard_limit_desc">普通模式可设为 10–2000 条，默认 500 条。短时保留和到期规则照常生效。调低上限可能清理旧记录。</string>
-    <string name="settings_host_keyboard_font_title">使用微信输入法原字体</string>
-    <string name="settings_host_keyboard_font_desc">关闭时使用 SF Pro。保存后重启微信输入法以切换字体。</string>
+    <string name="settings_keyboard_font_builtin_title">内置键盘字体</string>
+    <string name="settings_keyboard_font_builtin_desc">使用内置 SF Pro 字体，默认选项。</string>
+    <string name="settings_keyboard_font_system_title">跟随系统字体</string>
+    <string name="settings_keyboard_font_system_desc">使用系统无衬线字体显示键盘文字。</string>
+    <string name="settings_keyboard_font_import_title">导入键盘字体</string>
+    <string name="settings_keyboard_font_import_desc">选择 TTF 或 OTF 字体文件。</string>
+    <string name="settings_keyboard_font_invalid">无法加载选择的字体。</string>
     <string name="settings_clipboard_unlimited_title">剪贴板不限条数</string>
     <string name="settings_clipboard_unlimited_desc">取消普通模式的条数清理，仍按宿主规则处理到期记录和短时保留。记录增多会占用更多空间。</string>
     <string name="settings_swipe_symbols_title">全键盘上滑符号（26 键拼音、英文）</string>
     <string name="settings_swipe_symbols_desc">每行填写一组原符号=新符号，例如 1=★。支持单个数字或符号，留空恢复默认。保存后重新启动输入法。</string>
     <string name="settings_swipe_symbols_invalid">每行填写一个原符号和一个新符号，用等号分隔，原符号不能重复</string>
+    <string name="settings_swipe_symbols_choose">选择 %1$s 的上滑符号</string>
     <string name="settings_logo_star">使用星形 Logo</string>
     <string name="settings_logo_diamond">使用菱形 Logo</string>
     <string name="settings_clipboard_limit_invalid">请输入 10 到 2000 之间的剪贴板条数</string>

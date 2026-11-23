@@ -117,7 +117,9 @@ internal object WeTypeWindowHooks {
         var hardwareViewIds: IntArray? = null,
         var originalWindowStateCaptured: Boolean = false,
         var originalWindowBackground: Drawable? = null,
-        var originalWindowBlurRadius: Int? = null
+        var originalWindowBlurRadius: Int? = null,
+        var backgroundBlurDrawable: Drawable? = null,
+        var backgroundBlurViewRoot: Any? = null
     )
 
     private class BackgroundTextureWaiter(
@@ -313,6 +315,10 @@ internal object WeTypeWindowHooks {
             when (stage) {
                 "onStartInputView" -> {
                     state.computedVisibleImeHeightPx = null
+                    if (state.windowVisible) {
+                        scheduleWindowBlur(inputMethodService, refreshStyle = false)
+                        return@runCatching
+                    }
                 }
                 "onWindowShown" -> {
                     if (!state.windowVisible) prepareBackgroundShow(state)
@@ -732,7 +738,7 @@ internal object WeTypeWindowHooks {
             } else {
                 cancelBackgroundTextureWait(state)
                 material.clear()
-                carrier.background = createBackgroundDrawable(carrier, context, style)
+                carrier.background = createBackgroundDrawable(carrier, context, state, style)
             }
             state.backgroundStyle = style
             state.backgroundViewRoot = viewRoot
@@ -872,6 +878,8 @@ internal object WeTypeWindowHooks {
         val carrier = state.backgroundCarrier ?: return
         (carrier.parent as? ViewGroup)?.removeView(carrier)
         state.backgroundCarrier = null
+        state.backgroundBlurDrawable = null
+        state.backgroundBlurViewRoot = null
         state.startupFill = null
         state.backgroundBounds.setEmpty()
         state.backgroundStyle = null
@@ -891,10 +899,10 @@ internal object WeTypeWindowHooks {
         state.originalWindowBlurRadius = null
     }
 
-    private fun createBackgroundDrawable(targetView: View, context: Context, style: BackgroundStyle): Drawable {
+    private fun createBackgroundDrawable(targetView: View, context: Context, state: WeTypeWindowState, style: BackgroundStyle): Drawable {
         val (color, blurRadius, edgeHighlightEnabled, edgeHighlightIntensity, cornerRadii) = style
         val tintDrawable = createTintDrawable(color, cornerRadii)
-        val blurDrawable = createInternalBackgroundBlurDrawable(targetView, blurRadius, cornerRadii)
+        val blurDrawable = createInternalBackgroundBlurDrawable(targetView, state, blurRadius, cornerRadii)
         val layers = buildList {
             blurDrawable?.also(::add)
             add(tintDrawable)
@@ -913,9 +921,16 @@ internal object WeTypeWindowHooks {
         return if (layers.size == 1) layers.first() else android.graphics.drawable.LayerDrawable(layers.toTypedArray())
     }
 
-    private fun createInternalBackgroundBlurDrawable(targetView: View, blurRadius: Int, cornerRadii: WeTypeCornerRadii): Drawable? {
+    private fun createInternalBackgroundBlurDrawable(targetView: View, state: WeTypeWindowState, blurRadius: Int, cornerRadii: WeTypeCornerRadii): Drawable? {
         val viewRootImpl = runCatching { targetView.invokeMethodAs<Any>("getViewRootImpl") }.getOrNull() ?: return null
-        val blurDrawable = runCatching { viewRootImpl.invokeMethodAs<Drawable>("createBackgroundBlurDrawable") }.getOrNull() ?: return null
+        if (state.backgroundBlurViewRoot !== viewRootImpl) {
+            state.backgroundBlurDrawable = null
+            state.backgroundBlurViewRoot = viewRootImpl
+        }
+        val blurDrawable = state.backgroundBlurDrawable
+            ?: runCatching { viewRootImpl.invokeMethodAs<Drawable>("createBackgroundBlurDrawable") }.getOrNull()
+                ?.also { state.backgroundBlurDrawable = it }
+            ?: return null
         runCatching { blurDrawable.javaClass.getMethod("setBlurRadius", Int::class.javaPrimitiveType).invoke(blurDrawable, blurRadius) }
         runCatching { blurDrawable.javaClass.getMethod("setColor", Int::class.javaPrimitiveType).invoke(blurDrawable, Color.TRANSPARENT) }
         runCatching {

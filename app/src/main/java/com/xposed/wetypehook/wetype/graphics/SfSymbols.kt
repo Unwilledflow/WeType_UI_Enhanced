@@ -111,13 +111,14 @@ internal object SfSymbols {
         weight: Int = 400,
         fitFraction: Float = SYMBOL_FIT,
         hostAssets: AssetManager? = null,
+        typeface: Typeface? = null,
     ): Boolean {
         if (bounds.isEmpty || !fitFraction.isFinite() || fitFraction <= 0f) return false
         return draw(
             canvas, assets, SfSymbolCatalog.glyph(systemName) ?: return false,
             bounds.centerX(), bounds.centerY(), sizePx, color, weight, symbol = true,
             maxWidth = bounds.width() * fitFraction, maxHeight = bounds.height() * fitFraction,
-            hostAssets = hostAssets,
+            hostAssets = hostAssets, typeface = typeface,
         )
     }
 
@@ -147,12 +148,13 @@ internal object SfSymbols {
         color: Int,
         weight: Int = 400,
         hostAssets: AssetManager? = null,
+        typeface: Typeface? = null,
     ): Boolean {
         if (bounds.isEmpty) return false
         return draw(
             canvas, assets, text, bounds.centerX(), bounds.centerY(), sizePx, color, weight,
             symbol = false, maxWidth = bounds.width(), maxHeight = bounds.height(),
-            hostAssets = hostAssets,
+            hostAssets = hostAssets, typeface = typeface,
         )
     }
 
@@ -185,13 +187,14 @@ internal object SfSymbols {
         maxWidth: Float = Float.POSITIVE_INFINITY,
         maxHeight: Float = Float.POSITIVE_INFINITY,
         hostAssets: AssetManager? = null,
+        typeface: Typeface? = null,
     ): Boolean {
         if (text.isEmpty() || sizePx <= 0f || !sizePx.isFinite() ||
             !centerX.isFinite() || !centerY.isFinite() || maxWidth <= 0f || maxHeight <= 0f
         ) return false
         val opticalSize = if (symbol) SYMBOL_OPTICAL_SIZE else TEXT_OPTICAL_SIZE
-        val typeface = getTypeface(assets, weight, opticalSize, STANDARD_WIDTH, hostAssets) ?: return false
-        val cache = glyphCaches.get(typeface) ?: GlyphCache().also { glyphCaches.put(typeface, it) }
+        val selectedTypeface = typeface ?: getTypeface(assets, weight, opticalSize, STANDARD_WIDTH, hostAssets) ?: return false
+        val cache = glyphCaches.get(selectedTypeface) ?: GlyphCache().also { glyphCaches.put(selectedTypeface, it) }
         val runs = (if (symbol) cache.symbols else cache.text).let { entries ->
             entries.get(text) ?: mutableListOf<GlyphRun>().also { entries.put(text, it) }
         }
@@ -202,7 +205,7 @@ internal object SfSymbols {
                 break
             }
         }
-        val glyph = run ?: createGlyph(typeface, text, sizePx).also {
+        val glyph = run ?: createGlyph(selectedTypeface, text, sizePx).also {
             if (runs.size == MAX_CACHED_SIZES) runs.removeAt(0)
             runs.add(it)
         }

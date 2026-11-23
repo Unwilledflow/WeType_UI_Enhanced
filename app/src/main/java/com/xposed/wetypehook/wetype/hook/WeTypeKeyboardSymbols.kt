@@ -102,7 +102,7 @@ internal object WeTypeKeyboardSymbols {
             // This button entry point creates the single-character bubble, including its swipe label.
             showPopup.hookAfter { param ->
                 val popup = popupView.invoke(param.thisObject) as? ViewGroup ?: return@hookAfter
-                if (!WeTypeSettings.readProfilesXposed().useHostKeyboardFont) removePopupFontPadding(popup)
+                if (WeTypeSettings.readProfilesXposed().keyboardFontMode != "system") removePopupFontPadding(popup)
             }
             Log.i("Success: Hook WeType SF key popup font metrics")
         }.onFailure {
@@ -189,11 +189,11 @@ internal object WeTypeKeyboardSymbols {
                     val assets = runCatching(getModuleAssets).getOrNull()
                         ?: return@registerHook chain.proceed()
                     if (selection == WeTypeKeyAppearance.FontOnly) {
-                        if (WeTypeSettings.readProfilesXposed().useHostKeyboardFont) return@registerHook chain.proceed()
+                        if (WeTypeSettings.readProfilesXposed().keyboardFontMode == "system") return@registerHook chain.proceed()
                         if (runCatching { access.drawDotComma(canvas, assets, button, hostResources.assets) }.getOrDefault(false)) {
                             return@registerHook null
                         }
-                        val font = SfSymbols.getTypeface(assets, hostAssets = hostResources.assets)
+                        val font = WeTypeSettings.activeKeyboardTypeface(assets, hostResources.assets)
                             ?: return@registerHook chain.proceed()
                         val previous = paintFields.mapNotNull { field ->
                             (field.get(chain.thisObject) as? Paint)?.let { paint ->
@@ -319,7 +319,7 @@ internal object WeTypeKeyboardSymbols {
             val hintSize = (floatTextSize.invoke(button) as Int).toFloat()
             if (rect.isEmpty || mainSize <= 0f || hintSize <= 0f) return false
             val paint = dotCommaPaint
-            paint.typeface = SfSymbols.getTypeface(assets, hostAssets = hostAssets) ?: return false
+            paint.typeface = WeTypeSettings.activeKeyboardTypeface(assets, hostAssets) ?: return false
             paint.textSize = mainSize
             paint.getTextBounds(main, 0, main.length, mainInk)
             val mainMetrics = paint.fontMetrics
@@ -377,7 +377,8 @@ internal object WeTypeKeyboardSymbols {
                 }
                 is WeTypeKeyAppearance.Text -> {
                     val size = rect.height() * 18f / 43f
-                    SfSymbols.drawText(canvas, assets, appearance.value, bounds, size, color, hostAssets = hostAssets)
+                    SfSymbols.drawText(canvas, assets, appearance.value, bounds, size, color, hostAssets = hostAssets,
+                        typeface = WeTypeSettings.activeKeyboardTypeface(assets, hostAssets))
                 }
                 WeTypeKeyAppearance.Empty -> true
                 WeTypeKeyAppearance.FontOnly -> false

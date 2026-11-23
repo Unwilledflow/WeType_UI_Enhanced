@@ -18,6 +18,7 @@ import android.view.ViewOutlineProvider
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.Toast
+import java.io.File
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -28,6 +29,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -609,8 +611,8 @@ private fun WeTypeSettingsScreen(
         }
     }
 
-    LaunchedEffect(hostActivity) {
-        requestLauncherIcon()
+    LaunchedEffect(hostActivity, isEmbeddedHost) {
+        if (!isEmbeddedHost) requestLauncherIcon()
     }
     DisposableEffect(hostActivity) {
         onDispose {
@@ -637,8 +639,20 @@ private fun WeTypeSettingsScreen(
     var disableHotUpdate by rememberSaveable { mutableStateOf(profiles.disableHotUpdate) }
     var unlimitedClipboard by rememberSaveable { mutableStateOf(profiles.unlimitedClipboard) }
     var clipboardMaxRecords by rememberSaveable { mutableStateOf(profiles.clipboardMaxRecords.toString()) }
-    var useHostKeyboardFont by rememberSaveable { mutableStateOf(profiles.useHostKeyboardFont) }
+    var keyboardFontMode by rememberSaveable { mutableStateOf(profiles.keyboardFontMode) }
+    var customKeyboardFontPath by rememberSaveable { mutableStateOf(profiles.customKeyboardFontPath) }
     var swipeSymbols by rememberSaveable { mutableStateOf(profiles.swipeSymbols) }
+    val keyboardFontPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) runCatching {
+            val target = File(preferencesContext.filesDir, "keyboard-font.ttf")
+            preferencesContext.contentResolver.openInputStream(uri)?.use { input -> target.outputStream().use(input::copyTo) }
+                ?: error("Font unavailable")
+            android.graphics.Typeface.createFromFile(target)
+            customKeyboardFontPath = target.absolutePath
+            keyboardFontMode = "custom"
+        }.onFailure { Toast.makeText(context, R.string.settings_keyboard_font_invalid, Toast.LENGTH_SHORT).show() }
+    }
+    var selectedSwipeKey by rememberSaveable { mutableStateOf<String?>(null) }
     val glassSupported = remember { WeTypeHyperMaterial.areGlassOverridesAvailable() }
     val parsedGlassOverrides = draft.parsedGlassOverrides()
     LaunchedEffect(draft, parsedGlassOverrides) {
@@ -715,7 +729,8 @@ private fun WeTypeSettingsScreen(
                 disableHotUpdate = disableHotUpdate,
                 clipboardMaxRecords = clipboardLimit ?: profiles.clipboardMaxRecords,
                 unlimitedClipboard = unlimitedClipboard,
-                useHostKeyboardFont = useHostKeyboardFont,
+                keyboardFontMode = keyboardFontMode,
+                customKeyboardFontPath = customKeyboardFontPath,
                 swipeSymbols = swipeSymbols
             ),
             onPersisted = { saved ->
@@ -1057,22 +1072,36 @@ private fun WeTypeSettingsScreen(
                             onCheckedChange = { unlimitedClipboard = it }
                         )
                         HorizontalDivider()
-                        Column(Modifier.fillMaxWidth().padding(16.dp)) {
-                            Text(stringResource(R.string.settings_swipe_symbols_desc))
-                            Spacer(Modifier.height(8.dp))
-                            TextField(
-                                value = swipeSymbols,
-                                onValueChange = { if (it.length <= 512) swipeSymbols = it },
-                                label = stringResource(R.string.settings_swipe_symbols_title),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
+                        SwipeSymbolKeyboard(
+                            mappings = WeTypeSettings.parseSwipeSymbols(swipeSymbols).orEmpty(),
+                            selectedKey = selectedSwipeKey,
+                            onSelectKey = { selectedSwipeKey = it },
+                            onSelectSymbol = { symbol ->
+                                val key = selectedSwipeKey ?: return@SwipeSymbolKeyboard
+                                val mappings = WeTypeSettings.parseSwipeSymbols(swipeSymbols).orEmpty().toMutableMap()
+                                if (symbol == key) mappings.remove(key) else mappings[key] = symbol
+                                swipeSymbols = mappings.entries.joinToString("\n") { (from, to) -> "$from=$to" }
+                            }
+                        )
                         HorizontalDivider()
                         MiuixSwitchWidget(
-                            title = stringResource(R.string.settings_host_keyboard_font_title),
-                            description = stringResource(R.string.settings_host_keyboard_font_desc),
-                            checked = useHostKeyboardFont,
-                            onCheckedChange = { useHostKeyboardFont = it }
+                            title = stringResource(R.string.settings_keyboard_font_builtin_title),
+                            description = stringResource(R.string.settings_keyboard_font_builtin_desc),
+                            checked = keyboardFontMode == "builtin",
+                            onCheckedChange = { if (it) keyboardFontMode = "builtin" }
+                        )
+                        MiuixSwitchWidget(
+                            title = stringResource(R.string.settings_keyboard_font_system_title),
+                            description = stringResource(R.string.settings_keyboard_font_system_desc),
+                            checked = keyboardFontMode == "system",
+                            onCheckedChange = { if (it) keyboardFontMode = "system" }
+                        )
+                        BasicComponent(
+                            title = stringResource(R.string.settings_keyboard_font_import_title),
+                            summary = customKeyboardFontPath.substringAfterLast('/').ifBlank {
+                                stringResource(R.string.settings_keyboard_font_import_desc)
+                            },
+                            onClick = { keyboardFontPicker.launch(arrayOf("font/ttf", "font/otf", "application/octet-stream")) }
                         )
                         HorizontalDivider()
                         MiuixSwitchWidget(
@@ -1248,13 +1277,7 @@ private fun PreviewCard(
     val context = LocalContext.current
     val displayColor = if (hyperMaterialEnabled && glassOverrides.glass == null) WeTypeHyperMaterial.fallbackColor(isDark) else color
     val keyboardFontFamily = remember(context) {
-        val hostAssets = runCatching {
-            val application = context.applicationContext
-            if (application.packageName == "com.tencent.wetype") application.assets
-            else context.createPackageContext("com.tencent.wetype", 0).assets
-        }.getOrNull()
-        SfSymbols.getTypeface(context.assets, hostAssets = hostAssets)
-            ?.let { FontFamily(it) } ?: FontFamily.Default
+        SfSymbols.getTypeface(context.assets)?.let { FontFamily(it) } ?: FontFamily.Default
     }
     val previewCornerValue = cornerRadius.coerceIn(0, WeTypeSettings.MAX_CORNER_RADIUS)
     val previewCorner = previewCornerValue.dp

@@ -51,13 +51,19 @@
     <string name="settings_group_input_behavior">Input and updates</string>
     <string name="settings_clipboard_limit_title">Clipboard history limit</string>
     <string name="settings_clipboard_limit_desc">Keep up to 10–2000 entries in normal mode, default 500. Short retention and expiry are unchanged. Lowering the limit can remove older entries.</string>
-    <string name="settings_host_keyboard_font_title">Use original WeType keyboard font</string>
-    <string name="settings_host_keyboard_font_desc">Off uses SF Pro. Save and restart WeType to change the font.</string>
+    <string name="settings_keyboard_font_builtin_title">Built-in keyboard font</string>
+    <string name="settings_keyboard_font_builtin_desc">Use the built-in SF Pro font. This is the default.</string>
+    <string name="settings_keyboard_font_system_title">Follow system font</string>
+    <string name="settings_keyboard_font_system_desc">Use the system sans-serif font for keyboard text.</string>
+    <string name="settings_keyboard_font_import_title">Import keyboard font</string>
+    <string name="settings_keyboard_font_import_desc">Choose a TTF or OTF file.</string>
+    <string name="settings_keyboard_font_invalid">The selected font could not be loaded.</string>
     <string name="settings_clipboard_unlimited_title">Unlimited clipboard entries</string>
     <string name="settings_clipboard_unlimited_desc">Disables count-based cleanup in normal mode. Expiry and short retention still apply. Keeping more entries can use more storage.</string>
     <string name="settings_swipe_symbols_title">QWERTY swipe symbols (Pinyin and English)</string>
     <string name="settings_swipe_symbols_desc">Enter one mapping per line, such as 1=★. Use a single digit or symbol on each side. Leave blank to restore defaults. Save and restart WeType.</string>
     <string name="settings_swipe_symbols_invalid">Use one original and one replacement per line, separated by =. Original symbols must be unique.</string>
+    <string name="settings_swipe_symbols_choose">Choose the upward symbol for %1$s</string>
     <string name="settings_logo_star">Use star logo</string>
     <string name="settings_logo_diamond">Use diamond logo</string>
     <string name="settings_clipboard_limit_invalid">Enter a clipboard limit from 10 to 2000</string>

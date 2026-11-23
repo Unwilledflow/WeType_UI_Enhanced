@@ -112,8 +112,11 @@ object WeTypeSettings {
         val disableHotUpdate: Boolean = DEFAULT_DISABLE_HOT_UPDATE,
         val clipboardMaxRecords: Int = DEFAULT_CLIPBOARD_MAX_RECORDS,
         val unlimitedClipboard: Boolean = false,
-        val useHostKeyboardFont: Boolean = false,
-        val swipeSymbols: String = ""
+        val keyboardFontMode: String = "builtin",
+        val customKeyboardFontPath: String = "",
+        val swipeSymbols: String = "",
+        @Deprecated("Use keyboardFontMode")
+        val useHostKeyboardFont: Boolean = false
     ) {
         internal val swipeSymbolMap by lazy { parseSwipeSymbols(swipeSymbols).orEmpty() }
         // Stable map identities keep the resource-color cache valid across draw calls.
@@ -244,6 +247,10 @@ object WeTypeSettings {
     fun ensureHostSnapshot(context: Context) {
         val appContext = context.applicationContext ?: context
         if (appContext.packageName != WETYPE_PACKAGE_NAME) return
+        if (hostContext === appContext && hostFile != null) {
+            readProfilesXposed()
+            return
+        }
         synchronized(settingsLock) {
             hostContext = appContext
             if (hostFile == null) {
@@ -261,8 +268,8 @@ object WeTypeSettings {
                     }
                 }.also { it.startWatching() }
             }
-            // Refresh at input/view entry too, including after a process was frozen.
-            snapshotDirty.set(true)
+            // FileObserver invalidates the snapshot after another process writes it.
+            // Avoid reparsing the XML on every keyboard view entry.
             readProfilesXposed()
         }
     }
@@ -353,6 +360,20 @@ object WeTypeSettings {
     internal fun readSnapshotXposed(resources: Resources? = null): Snapshot =
         readProfilesXposed().profile(isHostDarkMode(resources))
 
+    internal fun activeKeyboardTypeface(
+        moduleAssets: android.content.res.AssetManager,
+        hostAssets: android.content.res.AssetManager
+    ): android.graphics.Typeface? {
+        val profiles = readProfilesXposed()
+        return when (profiles.keyboardFontMode) {
+            "system" -> android.graphics.Typeface.create("sans-serif", android.graphics.Typeface.NORMAL)
+            "custom" -> runCatching {
+                profiles.customKeyboardFontPath.takeIf(String::isNotBlank)?.let(android.graphics.Typeface::createFromFile)
+            }.getOrNull() ?: com.xposed.wetypehook.wetype.graphics.SfSymbols.getTypeface(moduleAssets, hostAssets = hostAssets)
+            else -> com.xposed.wetypehook.wetype.graphics.SfSymbols.getTypeface(moduleAssets, hostAssets = hostAssets)
+        }
+    }
+
     internal fun readProfilesXposed(): Profiles {
         if (!snapshotDirty.get()) cachedXposedProfiles?.let { return it }
         return synchronized(settingsLock) {
@@ -408,7 +429,8 @@ object WeTypeSettings {
         put(KEY_DISABLE_HOT_UPDATE, disableHotUpdate)
         put(KEY_CLIPBOARD_MAX_RECORDS, profiles.clipboardMaxRecords)
         put("unlimited_clipboard", unlimitedClipboard)
-        put("host_keyboard_font", useHostKeyboardFont)
+        put("keyboard_font_mode", if (profiles.keyboardFontMode == "builtin" && profiles.useHostKeyboardFont) "system" else profiles.keyboardFontMode)
+        put("custom_keyboard_font_path", profiles.customKeyboardFontPath)
         put("swipe_symbols", profiles.swipeSymbols)
         fun writeProfile(prefix: String, profile: Snapshot) {
             val snapshot = profile
@@ -464,8 +486,13 @@ object WeTypeSettings {
             disableHotUpdate = getBoolean(KEY_DISABLE_HOT_UPDATE, DEFAULT_DISABLE_HOT_UPDATE),
             clipboardMaxRecords = getInt(KEY_CLIPBOARD_MAX_RECORDS, DEFAULT_CLIPBOARD_MAX_RECORDS),
             unlimitedClipboard = getBoolean("unlimited_clipboard", false),
-            useHostKeyboardFont = getBoolean("host_keyboard_font", false),
-            swipeSymbols = getString("swipe_symbols", "")
+            keyboardFontMode = when (getString("keyboard_font_mode", "builtin")) {
+                "system", "custom" -> getString("keyboard_font_mode", "builtin")
+                else -> if (getBoolean("host_keyboard_font", false)) "system" else "builtin"
+            },
+            customKeyboardFontPath = getString("custom_keyboard_font_path", ""),
+            swipeSymbols = getString("swipe_symbols", ""),
+            useHostKeyboardFont = getBoolean("host_keyboard_font", false)
         ).normalized()
         fun migrateCandidateColor(isDark: Boolean): Snapshot {
             val profile = if (isDark) profiles.dark else profiles.light

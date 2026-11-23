@@ -122,6 +122,26 @@ class WeTypeSettingsTest {
     }
 
     @Test
+    fun legacyHostFontPreferenceMigratesToSystemMode() {
+        val legacy = readProfiles(mapOf("host_keyboard_font" to true))
+        assertEquals("system", legacy.keyboardFontMode)
+        val values = preferenceValues(legacy)
+        assertEquals("system", values["keyboard_font_mode"])
+        assertFalse(values.containsKey("host_keyboard_font"))
+    }
+
+    @Test
+    fun keyboardFontModeAndCustomFontPathRoundTrip() {
+        val profiles = WeTypeSettings.defaultProfiles().copy(
+            keyboardFontMode = "custom",
+            customKeyboardFontPath = "/data/user/0/com.tencent.wetype/files/fonts/custom.ttf"
+        )
+        val restored = readProfiles(preferenceValues(profiles))
+        assertEquals("custom", restored.keyboardFontMode)
+        assertEquals(profiles.customKeyboardFontPath, restored.customKeyboardFontPath)
+    }
+
+    @Test
     fun clipboardLimitRoundTripsClampsAndPreservesShortRetention() {
         val profiles = WeTypeSettings.defaultProfiles().copy(clipboardMaxRecords = 1200)
         val restored = readProfiles(preferenceValues(profiles))
@@ -142,9 +162,9 @@ class WeTypeSettingsTest {
 
     @Test
     fun keyboardOptionsRoundTripAndRejectInvalidMappings() {
-        val profiles = WeTypeSettings.defaultProfiles().copy(useHostKeyboardFont = true, swipeSymbols = "1=★\n==🔑")
+        val profiles = WeTypeSettings.defaultProfiles().copy(keyboardFontMode = "system", swipeSymbols = "1=★\n==🔑")
         val restored = readProfiles(preferenceValues(profiles))
-        assertTrue(restored.useHostKeyboardFont)
+        assertEquals("system", restored.keyboardFontMode)
         assertEquals(mapOf("1" to "★", "=" to "🔑"), restored.swipeSymbolMap)
         assertEquals(null, WeTypeSettings.parseSwipeSymbols("1=★\n1=◆"))
         assertEquals(null, WeTypeSettings.parseSwipeSymbols("1=abc"))

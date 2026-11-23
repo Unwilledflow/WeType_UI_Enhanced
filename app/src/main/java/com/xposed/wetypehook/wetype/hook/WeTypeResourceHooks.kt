@@ -126,10 +126,10 @@ internal object WeTypeResourceHooks {
                 AssetManager::class.java,
                 String::class.java
             ).hookBefore { param ->
-                if (param[1] != fontAsset || WeTypeSettings.readProfilesXposed().useHostKeyboardFont) return@hookBefore
+                if (param[1] != fontAsset || WeTypeSettings.readProfilesXposed().keyboardFontMode == "system") return@hookBefore
                 val hostAssets = param[0] as? AssetManager ?: return@hookBefore
                 runCatching {
-                    SfSymbols.getTypeface(getModuleAssetManager(), hostAssets = hostAssets)
+                    WeTypeSettings.activeKeyboardTypeface(getModuleAssetManager(), hostAssets)
                 }.getOrNull()?.let { param.result = it }
             }
             Log.i("Success: Hook SF Pro with host WeType font fallback")
