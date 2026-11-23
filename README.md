@@ -5,7 +5,7 @@
 
 > 本项目是 [NEORUAA/WeType_UI_Enhanced](https://github.com/NEORUAA/WeType_UI_Enhanced) 的非官方 fork，由社区维护。上游项目原作者及贡献者见上游仓库；本 fork 的维护与发布由本仓库负责。
 
-一个以 **微信输入法（WeType）界面美化与个性化** 为主要功能的 Xposed 模块，同时为作用域其它输入法解锁 MIUI 全面屏优化限制。
+一个面向 **微信输入法（WeType）外观与输入体验自定义** 的 Xposed 模块。除键盘界面美化外，还支持调整剪贴板保留条数、切换键盘字体、设置上滑输出符号和更换 Logo；同时为作用域内的第三方输入法提供 MIUI / HyperOS 全面屏键盘优化支持。
 
 
 <p align="center">
@@ -32,10 +32,16 @@
 - 调节工具栏图标背景透明度
 - 调节候选词背景透明度与圆角
 - 调节首个候选词及候选栏拼音边距
-- 键盘文字统一使用 SF Pro Text 字距，缺失字形使用微信输入法自带的 WE-Regular，模块仅内置 SF Pro；功能图标使用 SF Symbols，空格键保持空白，Shift 区分大小写和锁定状态，动作键随搜索、发送、完成、前往等含义切换图标
+- 切换 SF Pro 与微信输入法原字体；SF Pro 缺失字形使用宿主自带字体回退
+- 自定义键盘左上角 Logo：支持导入 SVG，也可直接选用星形、菱形预设
+- 自定义 26 键拼音与英文全键盘的上滑输出符号，例如将 `1` 改为 `★`；两种键盘共用映射
+- 自定义普通模式下剪贴板历史保留条数（10–2000），或启用不限条数；宿主的短时保留与到期清理规则仍然生效
+- 功能图标使用 SF Symbols，空格键保持空白，Shift 区分大小写和锁定状态，动作键随搜索、发送、完成、前往等含义切换图标
 - 支持阻止微信输入法热更新
 
 设置页顶栏的「浅色 / 深色」用于选择当前编辑的外观方案，颜色、材质、圆角、候选词和图标可分别保存。键盘自动使用微信输入法当前主题对应的方案，支持跟随系统和宿主手动选择主题，不限手机品牌。升级后旧外观设置会沿用到两套方案，原来的浅色 / 深色背景色分别保留。
+
+「输入与更新」分组提供与外观方案无关的输入设置：剪贴板不限条数仅取消普通模式按条数清理，不改变宿主短时保留及到期策略；上滑符号按“原符号=新符号”逐行填写，例如 `1=★`，留空即可恢复默认。字体、Logo 和上滑映射修改后建议重启微信输入法。
 
 点击颜色项左侧的色块或整行，可在调色盘弹窗中选择颜色、透明度或输入 Hex 色值。每项颜色还可单独开启「跟随浅色 / 深色」，与另一方案的对应颜色保持同步，包含透明度；改为反向跟随时会自动解除原有方向。切换编辑模式会保留尚未保存的修改，点击保存时一起保存两套方案。「重置当前模式外观」只重置当前方案，仍需点击保存生效；热更新与桌面图标等通用设置由两种模式共用。
 
@@ -106,9 +112,9 @@ MIUI / HyperOS 相关附加功能仅针对小米系统，不适用于其他厂�
 
 Xposed 模块仓库：https://github.com/Xposed-Modules-Repo/com.xposed.wetypehook
 
-Fork 优化版 WeType 4.0.2 LSPatch 集成包：[下载 APK](https://github.com/Unwilledflow/WeType_UI_Enhanced/releases/download/wetype-4.0.2-lspatch-fork-0ca0d17/Wetype_4.0.2.59201-fork-0ca0d17-lspatched.apk) · [构建与签名校验](./outputs/FORK-BUILD-VERIFICATION.json)
+Fork 优化版 WeType 4.0.2 LSPatch 集成包：[下载 APK](https://github.com/Unwilledflow/WeType_UI_Enhanced/releases/download/wetype-4.0.2-input-settings-0cbcb69/Wetype_4.0.2.59201-fork-input-settings-v2-lspatched.apk) · [独立 LSPosed 模块](https://github.com/Unwilledflow/WeType_UI_Enhanced/releases/download/wetype-4.0.2-input-settings-0cbcb69/WeType_UI_Enhanced-1.29.0-input-settings-v2.apk) · [发布页](https://github.com/Unwilledflow/WeType_UI_Enhanced/releases/tag/wetype-4.0.2-input-settings-0cbcb69)
 
-该集成包重新签名，不保留腾讯原签名，不能覆盖官方原版安装；安装和运行尚未在实机验证。
+该集成包包含上述输入自定义功能，重新签名且不保留腾讯原签名，不能覆盖官方原版安装。本预览版尚未在实机验证。
 
 ## 开源致谢
 
